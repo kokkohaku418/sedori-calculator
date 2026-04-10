@@ -101,6 +101,7 @@ function trackEvent(payload: TrackPayload): void {
 
   // GA4 へ送信（gtag 未ロード時は何もしない）
   window.gtag?.("event", payload.event, {
+    label: "amazon_cta",
     verdict: payload.verdict,
     platform: payload.platform,
     surface: payload.surface,
