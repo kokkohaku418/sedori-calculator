@@ -99,16 +99,13 @@ function trackEvent(payload: TrackPayload): void {
     console.log("[sedori-track]", enriched);
   }
 
-  // GA4 例:
-  // window.gtag?.("event", payload.event, {
-  //   verdict: payload.verdict,
-  //   platform: payload.platform,
-  //   surface: payload.surface,
-  //   link_url: payload.href,
-  // });
-  //
-  // PostHog 例:
-  // window.posthog?.capture(payload.event, enriched);
+  // GA4 へ送信（gtag 未ロード時は何もしない）
+  window.gtag?.("event", payload.event, {
+    verdict: payload.verdict,
+    platform: payload.platform,
+    surface: payload.surface,
+    link_url: payload.href,
+  });
 }
 
 /* ---------- TONE: トーン別の Tailwind クラス ---------- */
