@@ -23,22 +23,23 @@ import {
 
 type Tab = "calc" | "history";
 
+/**
+ * SSRとクライアントで完全一致する初期状態を作る。
+ * localStorageは触らない（SSRで取得不能なので、ハイドレーション後に別途復元する）。
+ */
 function buildInitial(params: URLSearchParams): FormState {
-  // Priority: URL params > localStorage > sample defaults
   const url = decodeShare(params);
   const hasUrl = Object.keys(url).length > 0;
-  if (hasUrl) {
-    return {
-      ...SAMPLE_FORM,
-      platform: url.p ?? SAMPLE_FORM.platform,
-      cost: url.c != null ? String(url.c) : "",
-      price: url.s != null ? String(url.s) : "",
-      shipping: url.sh != null ? String(url.sh) : "",
-      feeOverride: url.f != null ? String(url.f) : null,
-      amazonCategory: url.cat ?? SAMPLE_FORM.amazonCategory,
-    };
-  }
-  return loadPersistedForm() ?? SAMPLE_FORM;
+  if (!hasUrl) return SAMPLE_FORM;
+  return {
+    ...SAMPLE_FORM,
+    platform: url.p ?? SAMPLE_FORM.platform,
+    cost: url.c != null ? String(url.c) : "",
+    price: url.s != null ? String(url.s) : "",
+    shipping: url.sh != null ? String(url.sh) : "",
+    feeOverride: url.f != null ? String(url.f) : null,
+    amazonCategory: url.cat ?? SAMPLE_FORM.amazonCategory,
+  };
 }
 
 function CalculatorInner() {
@@ -63,6 +64,27 @@ function CalculatorInner() {
   const [fba, setFba] = useState(initial.fba);
   const [weight, setWeight] = useState(initial.weight);
   const [longest, setLongest] = useState(initial.longest);
+
+  // ハイドレーション後にlocalStorageから復元（URL指定が無いときだけ）
+  useEffect(() => {
+    const hasUrl = Object.keys(decodeShare(new URLSearchParams(params.toString()))).length > 0;
+    if (hasUrl) return;
+    const stored = loadPersistedForm();
+    if (!stored) return;
+    setPlatform(stored.platform);
+    setCost(stored.cost);
+    setPrice(stored.price);
+    setShipping(stored.shipping);
+    setFeeOverride(stored.feeOverride);
+    setPacking(stored.packing);
+    setTransport(stored.transport);
+    setMercariTransfer(stored.mercariTransfer);
+    setAmazonCategory(stored.amazonCategory);
+    setFba(stored.fba);
+    setWeight(stored.weight);
+    setLongest(stored.longest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist to localStorage on every change
   useEffect(() => {
@@ -294,7 +316,7 @@ function CalculatorInner() {
                     role="switch"
                     aria-checked={mercariTransfer}
                     onClick={() => setMercariTransfer(!mercariTransfer)}
-                    className={`relative w-10 h-5.5 w-11 h-6 rounded-full transition-colors ${
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
                       mercariTransfer ? "bg-ink-900" : "bg-ink-300"
                     }`}
                   >
@@ -364,7 +386,7 @@ function CalculatorInner() {
             onClick={handleSave}
             className="h-11 px-4 rounded-2xl bg-ink-900 hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13px] font-semibold transition active:scale-[0.985]"
           >
-            💾 履歴に保存
+            履歴に保存
           </button>
           <ShareButtons
             result={result}

@@ -1,14 +1,20 @@
 import Calculator from "@/components/Calculator";
 import Link from "next/link";
 
+// 後で差し替えやすいよう一箇所に集約
+const OPERATOR = {
+  name: "kokkohaku418",
+  email: "kokkohaku418@gmail.com",
+};
+
 export default function Page() {
   return (
     <main className="min-h-dvh">
-      <div className="mx-auto max-w-5xl px-5 sm:px-8 py-10 sm:py-16">
+      <div className="mx-auto max-w-5xl px-5 sm:px-8 pt-10 sm:pt-16 pb-28 lg:pb-16">
         <header className="mb-9 sm:mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white shadow-card text-[11px] font-semibold text-ink-700 mb-5 tracking-wide">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            ⚡ 1秒で判定 / 完全無料 / 登録不要
+            1秒で判定 / 完全無料 / 登録不要
           </div>
           <h1 className="text-[34px] sm:text-[48px] font-semibold tracking-tight text-ink-900 leading-[1.05]">
             その仕入れ、
@@ -23,9 +29,9 @@ export default function Page() {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-2">
-            <Pill icon="✓" tone="emerald" text="仕入れOK" />
-            <Pill icon="!" tone="amber" text="微妙" />
-            <Pill icon="×" tone="red" text="見送り" />
+            <Pill label="GO" tone="emerald" text="仕入れOK" />
+            <Pill label="CHECK" tone="amber" text="微妙" />
+            <Pill label="NEXT" tone="ink" text="見送り" />
           </div>
         </header>
 
@@ -46,31 +52,57 @@ export default function Page() {
           />
         </section>
 
-        <footer className="mt-16 pt-8 border-t border-ink-100 text-[11px] text-ink-500 flex flex-wrap items-center justify-between gap-2">
-          <span>© {new Date().getFullYear()} Sedori Calculator</span>
-          <nav className="flex items-center gap-4">
+        <footer className="mt-16 pt-8 border-t border-ink-100 space-y-4 text-[11px] text-ink-500">
+          <p className="leading-relaxed max-w-2xl">
+            当サイトはAmazonのアソシエイトとして、適格販売により収入を得ています。
+          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>© {new Date().getFullYear()} Sedori Calculator</span>
+              <span>運営者: {OPERATOR.name}</span>
+              <span>
+                連絡先:{" "}
+                <a
+                  href={`mailto:${OPERATOR.email}`}
+                  className="underline hover:text-ink-900 transition"
+                >
+                  {OPERATOR.email}
+                </a>
+              </span>
+            </div>
             <Link href="/blog" className="hover:text-ink-900 transition">
               ブログ
             </Link>
-            <span>Made for resellers, by resellers.</span>
-          </nav>
+          </div>
         </footer>
       </div>
     </main>
   );
 }
 
-function Pill({ icon, tone, text }: { icon: string; tone: "emerald" | "amber" | "red"; text: string }) {
+type PillTone = "emerald" | "amber" | "ink";
+
+function Pill({ label, tone, text }: { label: string; tone: PillTone; text: string }) {
   const cls =
     tone === "emerald"
       ? "bg-emerald-50 text-emerald-700"
       : tone === "amber"
       ? "bg-amber-50 text-amber-700"
-      : "bg-red-50 text-red-600";
+      : "bg-ink-100 text-ink-700";
+  const badge =
+    tone === "emerald"
+      ? "bg-emerald-500 text-white"
+      : tone === "amber"
+      ? "bg-amber-500 text-white"
+      : "bg-ink-900 text-white";
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold ${cls}`}>
-      <span className="w-4 h-4 rounded-full bg-white/60 flex items-center justify-center text-[10px]">
-        {icon}
+    <span
+      className={`inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-[12px] font-semibold ${cls}`}
+    >
+      <span
+        className={`inline-flex items-center h-5 px-1.5 rounded-full text-[9px] font-bold tracking-[0.08em] ${badge}`}
+      >
+        {label}
       </span>
       {text}
     </span>

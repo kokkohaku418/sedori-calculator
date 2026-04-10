@@ -1,11 +1,11 @@
 "use client";
 import { type Verdict, VERDICT_META } from "@/lib/calc";
 
-const TONE: Record<Verdict, { bg: string; text: string; dot: string; icon: string }> = {
-  ok:   { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", icon: "✓" },
-  warn: { bg: "bg-amber-50",   text: "text-amber-700",   dot: "bg-amber-500",   icon: "!" },
-  ng:   { bg: "bg-red-50",     text: "text-red-600",     dot: "bg-red-500",     icon: "×" },
-  idle: { bg: "bg-ink-50",     text: "text-ink-500",     dot: "bg-ink-300",     icon: "—" },
+const TONE: Record<Verdict, { bg: string; text: string; dot: string }> = {
+  ok:   { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
+  warn: { bg: "bg-amber-50",   text: "text-amber-700",   dot: "bg-amber-500" },
+  ng:   { bg: "bg-red-50",     text: "text-red-600",     dot: "bg-red-500" },
+  idle: { bg: "bg-ink-50",     text: "text-ink-500",     dot: "bg-ink-300" },
 };
 
 export default function VerdictBadge({ verdict, size = "md" }: { verdict: Verdict; size?: "sm" | "md" | "lg" }) {

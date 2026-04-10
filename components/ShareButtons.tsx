@@ -12,10 +12,10 @@ type Props = {
   shareState: ShareState;
 };
 
-function verdictEmoji(v: Verdict): string {
-  if (v === "ok") return "✅仕入れOK";
-  if (v === "warn") return "⚠微妙";
-  if (v === "ng") return "❌見送り";
+function verdictLabel(v: Verdict): string {
+  if (v === "ok") return "[GO 仕入れOK]";
+  if (v === "warn") return "[CHECK 微妙]";
+  if (v === "ng") return "[NEXT 見送り]";
   return "";
 }
 
@@ -28,7 +28,7 @@ export default function ShareButtons({ result, verdict, platform, shareState }: 
   const platformName = getPlatform(platform).name;
   const text = `【${platformName}】仕入${formatYen(shareState.c ?? 0)} → 販売${formatYen(
     shareState.s ?? 0
-  )}\n利益 ${formatYen(result.profit)} (${formatPercent(result.marginRate)}) ${verdictEmoji(
+  )}\n利益 ${formatYen(result.profit)} (${formatPercent(result.marginRate)}) ${verdictLabel(
     verdict
   )}`;
 
@@ -56,7 +56,7 @@ export default function ShareButtons({ result, verdict, platform, shareState }: 
         onClick={handleCopy}
         className="h-11 rounded-2xl bg-ink-50 hover:bg-ink-100 disabled:opacity-40 disabled:cursor-not-allowed text-[13px] font-semibold text-ink-700 transition active:scale-[0.985]"
       >
-        {copied ? "✓ コピー済み" : "📋 結果をコピー"}
+        {copied ? "コピーしました" : "結果をコピー"}
       </button>
       <a
         href={disabled ? undefined : xUrl}
@@ -67,7 +67,7 @@ export default function ShareButtons({ result, verdict, platform, shareState }: 
           disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "hover:bg-ink-700"
         }`}
       >
-        𝕏 でシェア
+        Xでシェア
       </a>
     </div>
   );

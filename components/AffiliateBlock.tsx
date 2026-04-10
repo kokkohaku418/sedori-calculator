@@ -93,9 +93,11 @@ function trackEvent(payload: TrackPayload): void {
 
   const enriched = { ...payload, ts: new Date().toISOString() };
 
-  // 開発用: 構造化ログでクリックを確認
-  // eslint-disable-next-line no-console
-  console.log("[sedori-track]", enriched);
+  // 開発用ログ（本番ビルドでは出さない）
+  if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line no-console
+    console.log("[sedori-track]", enriched);
+  }
 
   // GA4 例:
   // window.gtag?.("event", payload.event, {
@@ -237,9 +239,12 @@ export default function AffiliateBlock({
         </a>
       </div>
 
-      {/* モバイル専用 スティッキー CTA */}
+      {/* モバイル専用 スティッキー CTA（iPhone ホームバー回避のため safe-area を加算） */}
       {outOfView && (
-        <div className="lg:hidden fixed bottom-3 inset-x-3 z-50 animate-rise">
+        <div
+          className="lg:hidden fixed inset-x-3 z-50 animate-rise"
+          style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        >
           <a
             href={href}
             target="_blank"

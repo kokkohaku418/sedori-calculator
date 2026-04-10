@@ -32,11 +32,18 @@ export function decodeShare(params: URLSearchParams): ShareState {
     const n = Number(v);
     return Number.isFinite(n) && n >= 0 ? n : undefined;
   };
-  out.c = num("c");
-  out.s = num("s");
-  out.sh = num("sh");
-  out.f = num("f");
-  out.fx = num("fx");
+  // 値が存在する場合のみキーをセット（undefined を入れないことで
+  // Object.keys().length での「URL有無」判定を正しく機能させる）
+  const c = num("c");
+  if (c != null) out.c = c;
+  const s = num("s");
+  if (s != null) out.s = s;
+  const sh = num("sh");
+  if (sh != null) out.sh = sh;
+  const f = num("f");
+  if (f != null) out.f = f;
+  const fx = num("fx");
+  if (fx != null) out.fx = fx;
   const cat = params.get("cat");
   if (cat) out.cat = cat;
   return out;

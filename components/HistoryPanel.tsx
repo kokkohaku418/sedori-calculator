@@ -27,7 +27,7 @@ export default function HistoryPanel({ items, stats, onLoad, onRemove, onClear }
   if (items.length === 0) {
     return (
       <div className="rounded-xl2 bg-white shadow-card p-8 text-center">
-        <div className="text-[40px] mb-2">📋</div>
+        <div className="mx-auto mb-3 w-10 h-10 rounded-2xl border-2 border-ink-100" />
         <div className="text-[14px] font-semibold text-ink-700">履歴はまだありません</div>
         <p className="mt-2 text-[12px] text-ink-500 leading-relaxed">
           計算したら結果カードの「履歴に保存」を押すと、ここに最大 50 件まで残ります。
