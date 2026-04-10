@@ -55,14 +55,14 @@ const COPY: Record<ActiveVerdict, Copy> = {
 /* ---------- LINKS: URLは1箇所に集約。差し替えはここだけ ---------- */
 const LINKS: Record<ActiveVerdict, LinkResolver> = {
   // TODO: ASINが分かるようになったら商品ページ + アソシエイトタグへ
-  // 例: `https://www.amazon.co.jp/dp/${asin}?tag=YOUR_TAG-22`
-  ok: () => "https://www.amazon.co.jp/?tag=YOUR_TAG-22",
+  // 例: `https://www.amazon.co.jp/dp/${asin}?tag=kokkohaku418-22`
+  ok: () => "https://www.amazon.co.jp/?tag=kokkohaku418-22",
 
   // TODO: Keepa の紹介リンクへ
   warn: () => "https://keepa.com/",
 
   // TODO: カテゴリ別ベストセラー or 検索URLへ差し替え可能
-  ng: () => "https://www.amazon.co.jp/gp/bestsellers?tag=YOUR_TAG-22",
+  ng: () => "https://www.amazon.co.jp/gp/bestsellers?tag=kokkohaku418-22",
 };
 
 /* ---------- TRACK: 計測の抽象化（GA/PostHog等への置換ポイント） ---------- */
