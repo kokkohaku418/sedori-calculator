@@ -323,7 +323,7 @@ function CalculatorInner() {
           extraFee={extraFee}
         />
 
-        <AffiliateBlock platform={platform} />
+        <AffiliateBlock verdict={verdict} platform={platform} />
 
         <p className="text-[11px] text-ink-500 leading-relaxed px-2">
           ※ 計算結果は目安です。実際の手数料・送料・振込手数料等は各プラットフォームの最新規約をご確認ください。
