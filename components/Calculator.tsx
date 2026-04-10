@@ -14,30 +14,86 @@ import { calculate, judge, safeNumber, formatYen } from "@/lib/calc";
 import { calcAmazonFee, calcFBAFee, effectiveAmazonFeeRate } from "@/lib/amazon";
 import { useHistory, type HistoryEntry } from "@/lib/useHistory";
 import { decodeShare, type ShareState } from "@/lib/share";
+import {
+  SAMPLE_FORM,
+  loadPersistedForm,
+  savePersistedForm,
+  type FormState,
+} from "@/lib/useFormPersist";
 
 type Tab = "calc" | "history";
 
+function buildInitial(params: URLSearchParams): FormState {
+  // Priority: URL params > localStorage > sample defaults
+  const url = decodeShare(params);
+  const hasUrl = Object.keys(url).length > 0;
+  if (hasUrl) {
+    return {
+      ...SAMPLE_FORM,
+      platform: url.p ?? SAMPLE_FORM.platform,
+      cost: url.c != null ? String(url.c) : "",
+      price: url.s != null ? String(url.s) : "",
+      shipping: url.sh != null ? String(url.sh) : "",
+      feeOverride: url.f != null ? String(url.f) : null,
+      amazonCategory: url.cat ?? SAMPLE_FORM.amazonCategory,
+    };
+  }
+  return loadPersistedForm() ?? SAMPLE_FORM;
+}
+
 function CalculatorInner() {
   const params = useSearchParams();
-  const initial = useMemo(() => decodeShare(new URLSearchParams(params.toString())), [params]);
-
-  const [platform, setPlatform] = useState<PlatformId>(initial.p ?? "mercari");
-  const [cost, setCost] = useState(initial.c ? String(initial.c) : "");
-  const [price, setPrice] = useState(initial.s ? String(initial.s) : "");
-  const [shipping, setShipping] = useState(initial.sh ? String(initial.sh) : "");
-  const [feeOverride, setFeeOverride] = useState<string | null>(
-    initial.f != null ? String(initial.f) : null
+  const initial = useMemo(
+    () => buildInitial(new URLSearchParams(params.toString())),
+    [params]
   );
+
+  const [platform, setPlatform] = useState<PlatformId>(initial.platform);
+  const [cost, setCost] = useState(initial.cost);
+  const [price, setPrice] = useState(initial.price);
+  const [shipping, setShipping] = useState(initial.shipping);
+  const [feeOverride, setFeeOverride] = useState<string | null>(initial.feeOverride);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [packing, setPacking] = useState("");
-  const [transport, setTransport] = useState("");
-  const [mercariTransfer, setMercariTransfer] = useState(true);
+  const [packing, setPacking] = useState(initial.packing);
+  const [transport, setTransport] = useState(initial.transport);
+  const [mercariTransfer, setMercariTransfer] = useState(initial.mercariTransfer);
 
   // Amazon
-  const [amazonCategory, setAmazonCategory] = useState(initial.cat ?? "home");
-  const [fba, setFba] = useState(false);
-  const [weight, setWeight] = useState("");
-  const [longest, setLongest] = useState("");
+  const [amazonCategory, setAmazonCategory] = useState(initial.amazonCategory);
+  const [fba, setFba] = useState(initial.fba);
+  const [weight, setWeight] = useState(initial.weight);
+  const [longest, setLongest] = useState(initial.longest);
+
+  // Persist to localStorage on every change
+  useEffect(() => {
+    savePersistedForm({
+      platform,
+      cost,
+      price,
+      shipping,
+      feeOverride,
+      packing,
+      transport,
+      mercariTransfer,
+      amazonCategory,
+      fba,
+      weight,
+      longest,
+    });
+  }, [
+    platform,
+    cost,
+    price,
+    shipping,
+    feeOverride,
+    packing,
+    transport,
+    mercariTransfer,
+    amazonCategory,
+    fba,
+    weight,
+    longest,
+  ]);
 
   const [tab, setTab] = useState<Tab>("calc");
   const history = useHistory();
@@ -97,17 +153,20 @@ function CalculatorInner() {
   };
 
   const reset = () => {
-    setCost("");
-    setPrice("");
-    setShipping("");
-    setFeeOverride(null);
-    setPacking("");
-    setTransport("");
-    setPlatform("mercari");
+    // SAMPLE 値に戻す（空にしないことで、リセット後も即結果が出る）
+    setPlatform(SAMPLE_FORM.platform);
+    setCost(SAMPLE_FORM.cost);
+    setPrice(SAMPLE_FORM.price);
+    setShipping(SAMPLE_FORM.shipping);
+    setFeeOverride(SAMPLE_FORM.feeOverride);
+    setPacking(SAMPLE_FORM.packing);
+    setTransport(SAMPLE_FORM.transport);
+    setMercariTransfer(SAMPLE_FORM.mercariTransfer);
+    setAmazonCategory(SAMPLE_FORM.amazonCategory);
+    setFba(SAMPLE_FORM.fba);
+    setWeight(SAMPLE_FORM.weight);
+    setLongest(SAMPLE_FORM.longest);
     setShowAdvanced(false);
-    setFba(false);
-    setWeight("");
-    setLongest("");
   };
 
   const handleSave = () => {

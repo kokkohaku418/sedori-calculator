@@ -1,16 +1,19 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 import type { PlatformId } from "@/lib/platforms";
 import type { Verdict } from "@/lib/calc";
 
 /* -----------------------------------------------------------
  * AffiliateBlock
  * - 判定 (verdict) ごとに COPY / LINK / TRACK を切り替える
- * - URL は LINKS で一元管理（将来アフィリンクへの差し替えが容易）
- * - クリック計測は trackEvent() に集約（GA/PostHog 等への置換可能）
+ * - URL は LINKS で一元管理（asin/query を渡せる構造）
+ * - クリック計測は trackEvent() に集約（GA4/PostHog 等への置換可能）
+ * - モバイルではスクロール時に下部スティッキー CTA で常に露出
  * ----------------------------------------------------------- */
 
-type ActiveVerdict = Exclude<Verdict, "idle">;
+const ASSOC_TAG = "kokkohaku418-22";
 
+type ActiveVerdict = Exclude<Verdict, "idle">;
 type Tone = "emerald" | "amber" | "ink";
 
 type Copy = {
@@ -23,6 +26,8 @@ type Copy = {
 
 type LinkContext = {
   platform: PlatformId;
+  asin?: string;
+  query?: string;
 };
 
 type LinkResolver = (ctx: LinkContext) => string;
@@ -31,59 +36,77 @@ type LinkResolver = (ctx: LinkContext) => string;
 const COPY: Record<ActiveVerdict, Copy> = {
   ok: {
     label: "GO",
-    headline: "判定はGO。今日の利益を確定させよう。",
-    desc: "在庫が消える前に、商品ページからそのまま仕入れを完了させましょう。",
-    cta: "Amazonで仕入れる",
+    headline: "判定はGO。これは仕入れていい商品です。",
+    desc: "Amazonで価格と在庫を最終確認のうえ、そのまま仕入れに進みましょう。タイミングは早いほうが有利です。",
+    cta: "Amazonで商品を確認する",
     tone: "emerald",
   },
   warn: {
     label: "CHECK",
-    headline: "判断はあと一歩。価格推移を見て確信を持とう。",
-    desc: "Keepaで過去90日の価格と販売ランクを確認すれば、仕入れの良否は30秒で見極められます。",
+    headline: "迷ったら、過去90日の価格を1分で確認しましょう。",
+    desc: "Keepaなら価格推移と販売数の波が一目で分かります。回転する商品かどうかを30秒で見極められます。",
     cta: "Keepaで価格推移を見る",
     tone: "amber",
   },
   ng: {
     label: "NEXT",
-    headline: "この商品はパス。次の利益商品に時間を使おう。",
-    desc: "Amazonの売れ筋ランキングから、いま勢いのある商品を比較して次の候補を見つけましょう。",
-    cta: "Amazonで別商品を探す",
+    headline: "今回は見送り。次の利益商品を1分で探しましょう。",
+    desc: "Amazonの売れ筋ランキングを見れば、いま動いている商品が一覧で確認できます。同じ時間で次の候補を見つけにいきましょう。",
+    cta: "Amazonで売れ筋を見る",
     tone: "ink",
   },
 };
 
-/* ---------- LINKS: URLは1箇所に集約。差し替えはここだけ ---------- */
+/* ---------- LINKS: URL は1箇所に集約 ----------
+ * - asin が渡されれば商品ページ直リンクへ
+ * - query があれば検索結果へ
+ * - いずれも無ければ汎用ランディングへフォールバック
+ */
 const LINKS: Record<ActiveVerdict, LinkResolver> = {
-  // TODO: ASINが分かるようになったら商品ページ + アソシエイトタグへ
-  // 例: `https://www.amazon.co.jp/dp/${asin}?tag=kokkohaku418-22`
-  ok: () => "https://www.amazon.co.jp/?tag=kokkohaku418-22",
+  ok: ({ asin }) =>
+    asin
+      ? `https://www.amazon.co.jp/dp/${asin}?tag=${ASSOC_TAG}`
+      : `https://www.amazon.co.jp/?tag=${ASSOC_TAG}`,
 
-  // TODO: Keepa の紹介リンクへ
-  warn: () => "https://keepa.com/",
+  warn: ({ asin }) =>
+    asin
+      ? `https://keepa.com/#!product/5-${asin}`
+      : "https://keepa.com/",
 
-  // TODO: カテゴリ別ベストセラー or 検索URLへ差し替え可能
-  ng: () => "https://www.amazon.co.jp/gp/bestsellers?tag=kokkohaku418-22",
+  ng: ({ query }) =>
+    query
+      ? `https://www.amazon.co.jp/s?k=${encodeURIComponent(query)}&tag=${ASSOC_TAG}`
+      : `https://www.amazon.co.jp/gp/bestsellers?tag=${ASSOC_TAG}`,
 };
 
-/* ---------- TRACK: 計測の抽象化（GA/PostHog等への置換ポイント） ---------- */
+/* ---------- TRACK: 計測の抽象化 ---------- */
 type TrackPayload = {
   event: "affiliate_click";
   verdict: ActiveVerdict;
   platform: PlatformId;
   href: string;
+  surface: "card" | "sticky";
 };
 
 function trackEvent(payload: TrackPayload): void {
   if (typeof window === "undefined") return;
+
+  const enriched = { ...payload, ts: new Date().toISOString() };
+
+  // 開発用: 構造化ログでクリックを確認
+  // eslint-disable-next-line no-console
+  console.log("[sedori-track]", enriched);
+
   // GA4 例:
   // window.gtag?.("event", payload.event, {
   //   verdict: payload.verdict,
   //   platform: payload.platform,
+  //   surface: payload.surface,
   //   link_url: payload.href,
   // });
   //
   // PostHog 例:
-  // window.posthog?.capture(payload.event, payload);
+  // window.posthog?.capture(payload.event, enriched);
 }
 
 /* ---------- TONE: トーン別の Tailwind クラス ---------- */
@@ -138,53 +161,98 @@ function ArrowIcon() {
 export default function AffiliateBlock({
   verdict,
   platform,
+  asin,
+  query,
 }: {
   verdict: Verdict;
   platform: PlatformId;
+  asin?: string;
+  query?: string;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [outOfView, setOutOfView] = useState(false);
+
+  // モバイル専用: カードが画面外に出たら fixed CTA を出す
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (verdict === "idle") return;
+    const el = cardRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        setOutOfView(!entry.isIntersecting);
+      },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [verdict]);
+
   if (verdict === "idle") return null;
 
   const copy = COPY[verdict];
   const tone = TONE[copy.tone];
-  const href = LINKS[verdict]({ platform });
+  const href = LINKS[verdict]({ platform, asin, query });
 
-  const handleClick = () => {
-    trackEvent({ event: "affiliate_click", verdict, platform, href });
+  const handleClick = (surface: "card" | "sticky") => () => {
+    trackEvent({ event: "affiliate_click", verdict, platform, href, surface });
   };
 
   return (
-    <div
-      className={`relative rounded-xl2 border ${tone.card} p-5 sm:p-6 shadow-card animate-rise overflow-hidden`}
-    >
-      <span className="absolute top-3 right-3 text-[9px] font-semibold text-ink-300 tracking-widest">
-        PR
-      </span>
-
-      <div className="mb-4">
-        <span
-          className={`inline-flex items-center h-7 px-2.5 rounded-full text-[11px] font-bold tracking-[0.08em] ${tone.badge}`}
-        >
-          {copy.label}
-        </span>
-      </div>
-
-      <div className="text-[15px] sm:text-[17px] font-bold text-ink-900 leading-snug mb-2">
-        {copy.headline}
-      </div>
-      <p className="text-[12px] sm:text-[13px] text-ink-500 leading-relaxed mb-5">
-        {copy.desc}
-      </p>
-
-      <a
-        href={href}
-        target="_blank"
-        rel="sponsored noopener noreferrer"
-        onClick={handleClick}
-        className={`flex items-center justify-center gap-2 w-full min-h-[56px] sm:min-h-[52px] px-5 rounded-2xl text-[15px] sm:text-[14px] font-bold transition-all duration-150 active:scale-[0.98] outline-none focus-visible:ring-4 ${tone.button} ${tone.ring}`}
+    <>
+      <div
+        ref={cardRef}
+        className={`relative rounded-xl2 border ${tone.card} p-5 sm:p-6 shadow-card animate-rise overflow-hidden`}
       >
-        <span>{copy.cta}</span>
-        <ArrowIcon />
-      </a>
-    </div>
+        <span className="absolute top-3 right-3 text-[9px] font-semibold text-ink-300 tracking-widest">
+          PR
+        </span>
+
+        <div className="mb-4">
+          <span
+            className={`inline-flex items-center h-7 px-2.5 rounded-full text-[11px] font-bold tracking-[0.08em] ${tone.badge}`}
+          >
+            {copy.label}
+          </span>
+        </div>
+
+        <div className="text-[15px] sm:text-[17px] font-bold text-ink-900 leading-snug mb-2">
+          {copy.headline}
+        </div>
+        <p className="text-[12px] sm:text-[13px] text-ink-500 leading-relaxed mb-5">
+          {copy.desc}
+        </p>
+
+        <a
+          key={verdict}
+          href={href}
+          target="_blank"
+          rel="sponsored noopener noreferrer"
+          onClick={handleClick("card")}
+          className={`flex items-center justify-center gap-2 w-full min-h-[56px] sm:min-h-[52px] px-5 rounded-2xl text-[15px] sm:text-[14px] font-bold transition-all duration-150 active:scale-[0.98] outline-none focus-visible:ring-4 animate-cta-attract ${tone.button} ${tone.ring}`}
+        >
+          <span>{copy.cta}</span>
+          <ArrowIcon />
+        </a>
+      </div>
+
+      {/* モバイル専用 スティッキー CTA */}
+      {outOfView && (
+        <div className="lg:hidden fixed bottom-3 inset-x-3 z-50 animate-rise">
+          <a
+            href={href}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            onClick={handleClick("sticky")}
+            className={`flex items-center justify-center gap-2 w-full h-14 rounded-2xl text-[15px] font-bold transition-all duration-150 active:scale-[0.98] outline-none focus-visible:ring-4 ring-1 ring-black/5 ${tone.button} ${tone.ring}`}
+          >
+            <span className="opacity-80 text-[11px] font-semibold mr-1">{copy.label}</span>
+            <span>{copy.cta}</span>
+            <ArrowIcon />
+          </a>
+        </div>
+      )}
+    </>
   );
 }

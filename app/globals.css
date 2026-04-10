@@ -34,3 +34,16 @@ input[type="number"] {
   background: #0a0a0a;
   color: #ffffff;
 }
+
+/* CTA への注意誘導: 軽いスケールパルス（2回だけ） */
+@keyframes ctaAttract {
+  0%, 100% { transform: scale(1); }
+  20%, 60% { transform: scale(1.025); }
+  40%, 80% { transform: scale(1); }
+}
+.animate-cta-attract {
+  animation: ctaAttract 1.6s ease-in-out 0.4s 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-cta-attract { animation: none; }
+}
